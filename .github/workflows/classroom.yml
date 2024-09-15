@@ -1,0 +1,44 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: TA test
+      id: ta-test
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: TA test
+        setup-command: mkdir -p build && cd build && cmake .. && make
+        command: cd build && ./hellonetwork 0
+        input: ''
+        expected-output: TA is saying hello
+        comparison-method: contains
+        timeout: 1
+    - name: user test
+      id: user-test
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: user test
+        setup-command: mkdir -p build && cd build && cmake .. && make
+        command: cd build && ./hellonetwork 1
+        input: ''
+        expected-output: Hello Network Hello PKU
+        comparison-method: contains
+        timeout: 1
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TA-TEST_RESULTS: "${{steps.ta-test.outputs.result}}"
+        USER-TEST_RESULTS: "${{steps.user-test.outputs.result}}"
+      with:
+        runners: ta-test,user-test

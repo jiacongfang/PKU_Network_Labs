@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
             std::cout << "TA is saying hello\n";
             break;
         case 1:
-            std::cout << "Hello???\n"; // TODO: change this line to what you should output
+            std::cout << "Hello Network Hello PKU\n"; // TODO: change this line to what you should output
             break;
         default:
             std::cerr << "No such option\n";

@@ -56,7 +56,7 @@ const struct data_packet OPEN_CONN_REQUEST = {
     .m_status = 0, // unused
     .m_length = to_big_endian(12)};
 
-const struct data_packet OPEN_CONNECTION_REPLY = {
+const struct data_packet OPEN_CONN_REPLY = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA2),
     .m_status = 1,
@@ -194,7 +194,7 @@ ssize_t safe_send(int &sock, const char *buffer, size_t len)
         }
         if (b < 0)
         {
-            std::cerr << "Error sending data" << std::endl;
+            std::cout << "Error sending data" << std::endl;
             return -1;
         }
         ret += b; // Send b bytes of data successfully
@@ -210,12 +210,12 @@ ssize_t safe_recv(int &sock, char *buffer, size_t len, char terminator = '\0')
         ssize_t b = recv(sock, buffer + ret, len - ret, 0);
         if (b == 0)
         {
-            std::cerr << "Socket closed" << std::endl;
+            std::cout << "Socket closed" << std::endl;
             return -1;
         }
         if (b < 0)
         {
-            std::cerr << "Error receiving data" << std::endl;
+            std::cout << "Error receiving data" << std::endl;
             return -1;
         }
         // Check if the terminator is in the received data
@@ -229,6 +229,17 @@ ssize_t safe_recv(int &sock, char *buffer, size_t len, char terminator = '\0')
         ret += b; // Receive b bytes of data successfully
     }
     return ret; // Return the number of bytes received
+}
+
+void print_request(const data_packet &request, std::string name)
+{
+    std::cout << name << " ";
+    for (int i = 0; i < MAGIC_NUMBER_LENGTH; ++i)
+    {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(static_cast<unsigned char>(request.m_protocol[i])) << " ";
+    }
+    std::cout << std::endl;
+    std::cout << " " << static_cast<int>(static_cast<unsigned char>(request.m_type)) << " " << request.m_status << " " << std::dec << to_little_endian(request.m_length) << std::endl;
 }
 
 // ********** Helper Functions ********** //

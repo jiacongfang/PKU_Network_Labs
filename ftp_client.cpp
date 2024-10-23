@@ -11,7 +11,7 @@ bool check_server_status(int &sock)
 
     if (retval != 0 || error != 0)
     {
-        std::cerr << "Server is down" << std::endl;
+        std::cout << "Server is down" << std::endl;
         close(sock);
         sock = -1;
         info = "none";
@@ -44,7 +44,7 @@ int open_connection(int &sock, std::string server_ip, std::string server_port)
 
     // Receive the open connection reply
     char open_reply[MAX_BUFFER_SIZE];
-    ssize_t flag = safe_recv(sock, open_reply, sizeof(OPEN_CONNECTION_REPLY));
+    ssize_t flag = safe_recv(sock, open_reply, sizeof(OPEN_CONN_REPLY));
     if (flag < 0)
     {
         std::cout << "Failed to receive open connection reply" << std::endl;
@@ -59,7 +59,7 @@ int open_connection(int &sock, std::string server_ip, std::string server_port)
 
     if (received_reply.m_status != 1)
     {
-        std::cerr << "Server did not accept connection" << std::endl;
+        std::cout << "Server did not accept connection" << std::endl;
         close(sock);
         sock = -1;
         return -1;
@@ -120,14 +120,14 @@ void change_directory(int &sock, std::string dir)
     // Check the connection first
     if (info == "none" || !check_server_status(sock))
     {
-        std::cerr << "No connection" << std::endl;
+        std::cout << "No connection" << std::endl;
         return;
     }
 
     char cd_request[MAX_BUFFER_SIZE];
     if (sizeof(CD_REQUEST) + dir.size() > MAX_BUFFER_SIZE)
     {
-        std::cerr << "Buffer size too small" << std::endl;
+        std::cout << "Buffer size too small" << std::endl;
         return;
     }
 
@@ -164,9 +164,22 @@ void change_directory(int &sock, std::string dir)
     if (cd_reply_packet.m_status == 0)
     {
         std::cout << "Failed to change directory" << std::endl;
+        return;
+    }
+    else if (cd_reply_packet.m_type != CD_REPLY_SUCCESS.m_type)
+    {
+        std::cout << (static_cast<int>(cd_reply_packet.m_type)) << std::endl;
+        std::cout << "CD_REPLY_SUCCESS has a wrong type." << std::endl;
+        return;
+    }
+    else if (memcmp(&cd_reply_packet.m_protocol, &CD_REPLY_SUCCESS.m_protocol, MAGIC_NUMBER_LENGTH) != 0)
+    {
+        std::cout << "CD_REPLY_SUCCESS has a wrong protocol." << std::endl;
+        return;
     }
     else
     {
+        print_request(cd_reply_packet, "CD_REPLY_SUCCESS:");
         std::cout << "Directory changed" << std::endl;
     }
 }
@@ -176,14 +189,14 @@ int close_connection(int &sock)
     // Check the connection first
     if (!check_server_status(sock))
     {
-        std::cerr << "No connection" << std::endl;
+        std::cout << "No connection" << std::endl;
         return -1;
     }
 
     char quit_request[MAX_BUFFER_SIZE];
     if (sizeof(QUIT_REQUEST) > MAX_BUFFER_SIZE)
     {
-        std::cerr << "Buffer size too small" << std::endl;
+        std::cout << "Buffer size too small" << std::endl;
         close(sock);
         sock = -1;
         return -1;
@@ -206,12 +219,17 @@ int close_connection(int &sock)
     char quit_reply[MAX_BUFFER_SIZE];
     if (safe_recv(sock, quit_reply, sizeof(QUIT_REPLY)) < 0)
     {
-        std::cerr << "Failed to receive quit reply" << std::endl;
+        std::cout << "Failed to receive quit reply" << std::endl;
         return -1;
     }
 
     struct data_packet received_reply;
     memcpy(&received_reply, quit_reply, sizeof(QUIT_REPLY));
+    if (received_reply.m_type != QUIT_REPLY.m_type)
+    {
+        std::cout << "QUIT_REPLY has a wrong type." << std::endl;
+        return -1;
+    }
 
     std::cout << "Connection closed" << std::endl;
     close(sock);
@@ -257,7 +275,7 @@ void download_files(int &sock, std::string file_name)
     char get_reply[MAX_BUFFER_SIZE];
     if (safe_recv(sock, get_reply, sizeof(GET_REPLY_SUCCESS)) < 0)
     {
-        std::cerr << "Failed to receive get reply" << std::endl;
+        std::cout << "Failed to receive get reply" << std::endl;
         return;
     }
 
@@ -275,7 +293,7 @@ void download_files(int &sock, std::string file_name)
     struct data_packet file_data_packet;
     if (safe_recv(sock, file_data, sizeof(file_data_packet)) < 0)
     {
-        std::cerr << "Failed to receive file data" << std::endl;
+        std::cout << "Failed to receive file data" << std::endl;
         return;
     }
     memcpy(&file_data_packet, file_data, sizeof(file_data_packet));
@@ -284,7 +302,7 @@ void download_files(int &sock, std::string file_name)
     char *file_content = new char[file_size];
     if (safe_recv(sock, file_content, file_size) < 0)
     {
-        std::cerr << "Failed to receive file content" << std::endl;
+        std::cout << "Failed to receive file content" << std::endl;
         return;
     }
 
@@ -299,13 +317,13 @@ void download_files(int &sock, std::string file_name)
     std::ofstream file(file_path, std::ios::binary);
     if (!file)
     {
-        std::cerr << "Failed to create file" << std::endl;
+        std::cout << "Failed to create file" << std::endl;
         return;
     }
     file.write(file_content, file_size);
     if (!file)
     {
-        std::cerr << "Failed to write file" << std::endl;
+        std::cout << "Failed to write file" << std::endl;
         return;
     }
     std::cout << "File downloaded " << file_name << std::endl;
@@ -348,14 +366,14 @@ void upload_files(int &sock, std::string file_name)
     char put_reply[MAX_BUFFER_SIZE];
     if (safe_recv(sock, put_reply, sizeof(PUT_REPLY)) < 0)
     {
-        std::cerr << "Failed to receive put reply" << std::endl;
+        std::cout << "Failed to receive put reply" << std::endl;
         return;
     }
     struct data_packet received_reply;
     memcpy(&received_reply, put_reply, sizeof(PUT_REPLY));
     if (PUT_REPLY.m_type != received_reply.m_type)
     {
-        std::cerr << "PUT_REPLY has a wrong type." << std::endl;
+        std::cout << "PUT_REPLY has a wrong type." << std::endl;
         return;
     }
 
@@ -365,13 +383,13 @@ void upload_files(int &sock, std::string file_name)
     std::ifstream file(file_path, std::ios::binary);
     if (!file)
     {
-        std::cerr << "Failed to open file" << std::endl;
+        std::cout << "Failed to open file" << std::endl;
         return;
     }
     file.read(file_content, file_size);
     if (!file)
     {
-        std::cerr << "Failed to read file" << std::endl;
+        std::cout << "Failed to read file" << std::endl;
         return;
     }
     file.close();
@@ -388,14 +406,14 @@ void upload_files(int &sock, std::string file_name)
     // Send FILE_DATA HEAD
     if (sizeof(file_data_packet) != safe_send(sock, file_data_head, sizeof(file_data_packet)))
     {
-        std::cerr << "Failed to send file data head" << std::endl;
+        std::cout << "Failed to send file data head" << std::endl;
         return;
     }
 
     // Send FILE_DATA payload
     if (file_size != safe_send(sock, file_content, file_size))
     {
-        std::cerr << "Failed to send file content" << std::endl;
+        std::cout << "Failed to send file content" << std::endl;
         return;
     }
     std::cout << "File uploaded: " << file_name << std::endl;
@@ -434,7 +452,7 @@ void sha256(int &sock, std::string file_name)
     char sha256_reply[MAX_BUFFER_SIZE];
     if (safe_recv(sock, sha256_reply, sizeof(SHA_REPLY_SUCCESS)) < 0)
     {
-        std::cerr << "Failed to receive sha256 reply" << std::endl;
+        std::cout << "Failed to receive sha256 reply" << std::endl;
         return;
     }
     struct data_packet received_reply;
@@ -450,7 +468,7 @@ void sha256(int &sock, std::string file_name)
     struct data_packet file_data_packet;
     if (safe_recv(sock, file_data, sizeof(file_data_packet)) < 0)
     {
-        std::cerr << "Failed to receive file data" << std::endl;
+        std::cout << "Failed to receive file data" << std::endl;
         return;
     }
     memcpy(&file_data_packet, file_data, sizeof(file_data_packet));
@@ -486,7 +504,7 @@ int main(int argc, char *argv[])
             sock = socket(AF_INET, SOCK_STREAM, 0);
             if (sock < 0)
             {
-                std::cerr << "Failed to create socket" << std::endl;
+                std::cout << "Failed to create socket" << std::endl;
                 return -1;
             }
         }
@@ -510,7 +528,7 @@ int main(int argc, char *argv[])
             iss >> server_ip >> server_port;
             if (server_ip.empty() || server_port.empty())
             {
-                std::cerr << "Usage: open <server_ip> <server_port>" << std::endl;
+                std::cout << "Usage: open <server_ip> <server_port>" << std::endl;
                 continue;
             }
 
@@ -523,7 +541,7 @@ int main(int argc, char *argv[])
             // Connect to the server
             if (0 > connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))
             {
-                std::cerr << "Failed to connect to server" << std::endl;
+                std::cout << "Failed to connect to server" << std::endl;
                 close(sock);
                 sock = -1;
                 continue;
@@ -550,7 +568,7 @@ int main(int argc, char *argv[])
             iss >> dir;
             if (dir.empty())
             {
-                std::cerr << "Usage: cd <dir>" << std::endl;
+                std::cout << "Usage: cd <dir>" << std::endl;
                 continue;
             }
             change_directory(sock, dir);
@@ -607,13 +625,13 @@ int main(int argc, char *argv[])
                 if (close_connection(sock))
                     info = "none";
                 else
-                    std::cerr << "Failed to close connection" << std::endl;
+                    std::cout << "Failed to close connection" << std::endl;
             }
             continue;
         }
         else
         {
-            std::cerr << "Invalid command" << std::endl;
+            std::cout << "Invalid command" << std::endl;
         }
     }
 }

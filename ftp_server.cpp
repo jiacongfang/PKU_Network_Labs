@@ -5,6 +5,8 @@ void *client_handler(void *client)
     std::string current_dir = std::filesystem::current_path();
     int client_sock = *(int *)client;
 
+    std::cout << 1 << std::endl;
+
     // Receive OPEN_CONN_REQUEST
     char buffer[MAX_BUFFER_SIZE];
     if (safe_recv(client_sock, buffer, sizeof(OPEN_CONN_REQUEST)) < 0)
@@ -88,7 +90,7 @@ void *client_handler(void *client)
                 .m_protocol = PROTOCOL,
                 .m_type = LIST_REPLY.m_type,
                 .m_status = 0,
-                .m_length = to_big_endian(12 + length + 1)};
+                .m_length = htonl(12 + length + 1)};
 
             // Send LIST_REPLY Header
             if (sizeof(list_reply) != safe_send(client_sock, (char *)&list_reply, sizeof(list_reply)))
@@ -111,7 +113,7 @@ void *client_handler(void *client)
         // 3. CD
         else if (received_request.m_type == CD_REQUEST.m_type)
         {
-            size_t length = to_little_endian(received_request.m_length) - 12;
+            size_t length = ntohl(received_request.m_length) - 12;
             std::cout << "Length: " << length << std::endl;
             // Receive directory
             char dir[MAX_BUFFER_SIZE];
@@ -140,7 +142,7 @@ void *client_handler(void *client)
                         .m_protocol = PROTOCOL,
                         .m_type = CD_REPLY_FAIL.m_type,
                         .m_status = 0,
-                        .m_length = to_big_endian(12)};
+                        .m_length = htonl(12)};
 
                 if (sizeof(cd_reply_fail) != safe_send(client_sock, (char *)&cd_reply_fail, sizeof(cd_reply_fail)))
                 {
@@ -158,7 +160,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = CD_REPLY_SUCCESS.m_type,
                     .m_status = 1,
-                    .m_length = to_big_endian(12)};
+                    .m_length = htonl(12)};
 
             if (sizeof(cd_reply_success) != safe_send(client_sock, (char *)&cd_reply_success, sizeof(cd_reply_success)))
             {
@@ -175,7 +177,7 @@ void *client_handler(void *client)
         // 4. GET FILE
         else if (received_request.m_type == GET_REQUEST.m_type)
         {
-            size_t length = to_little_endian(received_request.m_length) - 12;
+            size_t length = ntohl(received_request.m_length) - 12;
             std::cout << "Length: " << length << std::endl;
 
             char file_name[MAX_BUFFER_SIZE];
@@ -202,7 +204,7 @@ void *client_handler(void *client)
                         .m_protocol = PROTOCOL,
                         .m_type = GET_REPLY_FAIL.m_type,
                         .m_status = 0,
-                        .m_length = to_big_endian(12)};
+                        .m_length = htonl(12)};
 
                 if (sizeof(get_reply_fail) != safe_send(client_sock, (char *)&get_reply_fail, sizeof(get_reply_fail)))
                 {
@@ -220,7 +222,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = GET_REPLY_SUCCESS.m_type,
                     .m_status = 1,
-                    .m_length = to_big_endian(12)};
+                    .m_length = htonl(12)};
             if (sizeof(get_reply_success) != safe_send(client_sock, (char *)&get_reply_success, sizeof(get_reply_success)))
             {
                 std::cout << "Failed to send get reply success" << std::endl;
@@ -254,7 +256,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = FILE_DATA.m_type,
                     .m_status = 0,
-                    .m_length = to_big_endian(12 + file_size)};
+                    .m_length = htonl(12 + file_size)};
             if (sizeof(file_data) != safe_send(client_sock, (char *)&file_data, sizeof(file_data)))
             {
                 std::cout << "Failed to send file data" << std::endl;
@@ -274,7 +276,7 @@ void *client_handler(void *client)
         // 5. PUT FILE
         else if (received_request.m_type == PUT_REQUEST.m_type)
         {
-            size_t length = to_little_endian(received_request.m_length) - 12;
+            size_t length = ntohl(received_request.m_length) - 12;
             std::cout << "Length: " << length << std::endl;
             char file_name[MAX_BUFFER_SIZE];
             if (safe_recv(client_sock, file_name, length) < 0)
@@ -292,7 +294,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = PUT_REPLY.m_type,
                     .m_status = 0,
-                    .m_length = to_big_endian(12)};
+                    .m_length = htonl(12)};
             if (sizeof(put_reply) != safe_send(client_sock, (char *)&put_reply, sizeof(put_reply)))
             {
                 std::cout << "Failed to send put reply" << std::endl;
@@ -315,7 +317,7 @@ void *client_handler(void *client)
 
             print_request(file_data_packet, std::string("FILE_DATA:"));
 
-            size_t file_size = to_little_endian(file_data_packet.m_length) - 12;
+            size_t file_size = ntohl(file_data_packet.m_length) - 12;
 
             std::cout << "file_size: " << file_size << std::endl;
 
@@ -356,7 +358,7 @@ void *client_handler(void *client)
         // 6. SHA
         else if (received_request.m_type == SHA_REQUEST.m_type)
         {
-            size_t length = to_little_endian(received_request.m_length) - 12;
+            size_t length = ntohl(received_request.m_length) - 12;
             char file_name[MAX_BUFFER_SIZE];
             if (safe_recv(client_sock, file_name, length) < 0)
             {
@@ -381,7 +383,7 @@ void *client_handler(void *client)
                         .m_protocol = PROTOCOL,
                         .m_type = SHA_REPLY_FAIL.m_type,
                         .m_status = 0,
-                        .m_length = to_big_endian(12)};
+                        .m_length = htonl(12)};
                 if (sizeof(sha_reply_fail) != safe_send(client_sock, (char *)&sha_reply_fail, sizeof(sha_reply_fail)))
                 {
                     std::cout << "Failed to send sha reply fail" << std::endl;
@@ -398,7 +400,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = SHA_REPLY_SUCCESS.m_type,
                     .m_status = 1,
-                    .m_length = to_big_endian(12)};
+                    .m_length = htonl(12)};
             if (sizeof(sha_reply_success) != safe_send(client_sock, (char *)&sha_reply_success, sizeof(sha_reply_success)))
             {
                 std::cout << "Failed to send sha reply success" << std::endl;
@@ -425,7 +427,7 @@ void *client_handler(void *client)
                     .m_protocol = PROTOCOL,
                     .m_type = FILE_DATA.m_type,
                     .m_status = 0,
-                    .m_length = to_big_endian(12 + sha_size + 1)};
+                    .m_length = htonl(12 + sha_size + 1)};
 
             // Send SHA Data Header
             if (sizeof(sha_data) != safe_send(client_sock, (char *)&sha_data, sizeof(sha_data)))
@@ -522,7 +524,7 @@ int main(int argc, char *argv[])
         }
 
         std::cout << "Client Connection: " << inet_ntoa(client_addr.sin_addr)
-                  << ":" << ntohs(client_addr.sin_port) << std::endl;
+                  << ":" << ntohl(client_addr.sin_port) << std::endl;
 
         int *p_client = new int;
         *p_client = client_sock;

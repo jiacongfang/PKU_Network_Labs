@@ -21,6 +21,7 @@
 #define MAX_BUFFER_SIZE 2048
 #define MAX_FILE_SIZE 1024 * 1024
 
+// These methods are deprecated and changed to `hton` and `ntoh`
 uint32_t to_big_endian(uint32_t value)
 {
     return ((value & 0xFF000000) >> 24) |
@@ -54,27 +55,27 @@ const struct data_packet OPEN_CONN_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA1),
     .m_status = 0, // unused
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 const struct data_packet OPEN_CONN_REPLY = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA2),
     .m_status = 1,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 2. LIST
 const struct data_packet LIST_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA3),
     .m_status = 0, // unused
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // Unused in ftp_client.cpp
 const struct data_packet LIST_REPLY = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA4),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + strlen(payload) + 1
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + strlen(payload) + 1
     // payload = file names, as one null-terminated string
 };
 
@@ -82,8 +83,8 @@ const struct data_packet LIST_REPLY = {
 const struct data_packet CD_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA5),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + strlen(payload) + 1
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + strlen(payload) + 1
     // payload = one directory name, as one null-terminated string
 };
 
@@ -91,20 +92,20 @@ const struct data_packet CD_REPLY_SUCCESS = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA6),
     .m_status = 1,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 const struct data_packet CD_REPLY_FAIL = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA6),
     .m_status = 0,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 4. GET FILE
 const struct data_packet GET_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA7),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + strlen(payload) + 1
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + strlen(payload) + 1
     // payload = one file name, as one null-terminated string
 };
 
@@ -112,20 +113,20 @@ const struct data_packet GET_REPLY_SUCCESS = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA8),
     .m_status = 1,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 const struct data_packet GET_REPLY_FAIL = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA8),
     .m_status = 0,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 5. PUT FILE
 const struct data_packet PUT_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xA9),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + strlen(payload) + 1
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + strlen(payload) + 1
     // payload = one file name, as one null-terminated string
 };
 
@@ -133,14 +134,14 @@ const struct data_packet PUT_REPLY = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAA),
     .m_status = 0, // unused
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 6. SHA256
 const struct data_packet SHA_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAB),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + strlen(payload) + 1
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + strlen(payload) + 1
     // payload = one file name, as one null-terminated string
 };
 
@@ -148,34 +149,34 @@ const struct data_packet SHA_REPLY_SUCCESS = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAC),
     .m_status = 1,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 const struct data_packet SHA_REPLY_FAIL = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAC),
     .m_status = 0,
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 7. QUIT
 const struct data_packet QUIT_REQUEST = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAD),
     .m_status = 0, // unused
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 const struct data_packet QUIT_REPLY = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xAE),
     .m_status = 0, // unused
-    .m_length = to_big_endian(12)};
+    .m_length = htonl(12)};
 
 // 8. FILE DATA
 // File data
 const struct data_packet FILE_DATA = {
     .m_protocol = PROTOCOL,
     .m_type = char(0xFF),
-    .m_status = 0,                // unused
-    .m_length = to_big_endian(12) // 12 + filesize
+    .m_status = 0,        // unused
+    .m_length = htonl(12) // 12 + filesize
     // payload = file data
 };
 // ********** myFTP Header ********** //
@@ -239,7 +240,7 @@ void print_request(const data_packet &request, std::string name)
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(static_cast<unsigned char>(request.m_protocol[i])) << " ";
     }
     std::cout << std::endl;
-    std::cout << " " << static_cast<int>(static_cast<unsigned char>(request.m_type)) << " " << request.m_status << " " << std::dec << to_little_endian(request.m_length) << std::endl;
+    std::cout << " " << static_cast<int>(static_cast<unsigned char>(request.m_type)) << " " << request.m_status << " " << std::dec << ntohl(request.m_length) << std::endl;
 }
 
 // ********** Helper Functions ********** //

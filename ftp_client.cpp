@@ -108,7 +108,7 @@ void list_files(int &sock)
     struct data_packet received_reply;
     memcpy(&received_reply, list_reply, sizeof(LIST_REPLY));
 
-    size_t length = to_little_endian(received_reply.m_length) - 13;
+    size_t length = ntohl(received_reply.m_length) - 13;
     char *file_list = new char[length + 1];
     memcpy(file_list, list_reply + sizeof(LIST_REPLY), length);
     file_list[length] = '\0';
@@ -135,7 +135,7 @@ void change_directory(int &sock, std::string dir)
         .m_protocol = PROTOCOL,
         .m_type = CD_REQUEST.m_type,
         .m_status = 0,
-        .m_length = to_big_endian(13 + dir.size())};
+        .m_length = htonl(13 + dir.size())};
 
     memcpy(cd_request, &cd_request_packet, sizeof(cd_request_packet));
     memcpy(cd_request + sizeof(cd_request_packet), dir.c_str(), dir.size());
@@ -258,7 +258,7 @@ void download_files(int &sock, std::string file_name)
         .m_protocol = PROTOCOL,
         .m_type = GET_REQUEST.m_type,
         .m_status = 0,
-        .m_length = to_big_endian(13 + file_name.size())};
+        .m_length = htonl(13 + file_name.size())};
     memcpy(get_request, &get_request_packet, sizeof(get_request_packet));
     memcpy(get_request + sizeof(get_request_packet), file_name.c_str(), file_name.size());
 
@@ -297,7 +297,7 @@ void download_files(int &sock, std::string file_name)
         return;
     }
     memcpy(&file_data_packet, file_data, sizeof(file_data_packet));
-    size_t file_size = to_little_endian(file_data_packet.m_length) - 12;
+    size_t file_size = ntohl(file_data_packet.m_length) - 12;
 
     char *file_content = new char[file_size];
     if (safe_recv(sock, file_content, file_size) < 0)
@@ -350,7 +350,7 @@ void upload_files(int &sock, std::string file_name)
         .m_protocol = PROTOCOL,
         .m_type = PUT_REQUEST.m_type,
         .m_status = 0,
-        .m_length = to_big_endian(13 + file_name.size())};
+        .m_length = htonl(13 + file_name.size())};
     memcpy(put_request, &put_request_packet, sizeof(put_request_packet));
     memcpy(put_request + sizeof(put_request_packet), file_name.c_str(), file_name.size());
 
@@ -399,7 +399,7 @@ void upload_files(int &sock, std::string file_name)
         .m_protocol = PROTOCOL,
         .m_type = FILE_DATA.m_type,
         .m_status = 0,
-        .m_length = to_big_endian(12 + file_size)};
+        .m_length = htonl(12 + file_size)};
     char file_data_head[MAX_BUFFER_SIZE];
     memcpy(file_data_head, &file_data_packet, sizeof(file_data_packet));
 
@@ -435,7 +435,7 @@ void sha256(int &sock, std::string file_name)
         .m_protocol = PROTOCOL,
         .m_type = SHA_REQUEST.m_type,
         .m_status = 0,
-        .m_length = to_big_endian(13 + file_name.size())};
+        .m_length = htonl(13 + file_name.size())};
     memcpy(sha256_request, &sha_request_packet, sizeof(sha_request_packet));
     memcpy(sha256_request + sizeof(sha_request_packet), file_name.c_str(), file_name.size());
 
@@ -474,7 +474,7 @@ void sha256(int &sock, std::string file_name)
     memcpy(&file_data_packet, file_data, sizeof(file_data_packet));
 
     // Receive the FILE_DATA payload
-    ssize_t file_size = to_little_endian(file_data_packet.m_length) - 13;
+    ssize_t file_size = ntohl(file_data_packet.m_length) - 13;
     char *sha256_value = new char[file_size + 1];
     if (safe_recv(sock, sha256_value, file_size + 1) < 0)
     {

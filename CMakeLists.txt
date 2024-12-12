@@ -16,7 +16,7 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
-option(DL "debug logging" ON)
+option(DL "debug logging" OFF)
 
 if(DL)
     message("Debug logging is on")
@@ -29,12 +29,12 @@ include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 include(GoogleTest)
 
-add_library(rtp_all src/util.c)
+add_library(rtp_all src/util.cpp)
 
-add_executable(sender src/sender.c)
+add_executable(sender src/sender.cpp)
 target_link_libraries(sender PUBLIC rtp_all)
 
-add_executable(receiver src/receiver.c)
+add_executable(receiver src/receiver.cpp)
 target_link_libraries(receiver PUBLIC rtp_all)
 
 add_executable(rtp_test_all src/test.cpp)

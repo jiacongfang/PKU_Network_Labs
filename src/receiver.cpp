@@ -76,6 +76,10 @@ int main(int argc, char **argv)
     uint16_t window_size = atoi(argv[3]);
     uint16_t mode = atoi(argv[4]); // 0: RBN, 1: SR
 
+    // Fresh the file
+    FILE *file = fopen(file_path.c_str(), "wb");
+    fclose(file);
+
     rtp_header_t *received_syn_header;
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -413,6 +417,8 @@ again:
     {
         LOG_FATAL("Invalid mode\n");
     }
+
+    close(sock);
 
     return 0;
 }

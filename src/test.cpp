@@ -17,9 +17,6 @@ static int port = 49152;
 static char origin[100];
 static char result[100];
 
-static char origin_root[100] = "./origin.txt";
-static char result_root[100] = "./result.txt";
-
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
@@ -41,16 +38,7 @@ int diff_file(const char *f1, const char *f2)
         int size1 = fread((void *)f1_buffer, sizeof(char), 65536, fp1);
         int size2 = fread((void *)f2_buffer, sizeof(char), 65536, fp2);
 
-        // write to file
-        FILE *fp3 = fopen(origin_root, "a");
-        fwrite(f1_buffer, sizeof(char), size1, fp3);
-        fclose(fp3);
-
-        FILE *fp4 = fopen(result_root, "a");
-        fwrite(f2_buffer, sizeof(char), size2, fp4);
-        fclose(fp4);
-
-        printf("size1: %d, size2: %d\n", size1, size2);
+        // printf("size1: %d, size2: %d\n", size1, size2);
 
         if (size1 != size2)
             return -3;
@@ -261,6 +249,7 @@ TEST_F(RTP, RECEIVER_NORMAL)
 {
     // no lost for reciver
     ASSERT_EQ(run_tests("16", "0", "0", false, false), 1);
+    ASSERT_EQ(run_tests("16", "0", "0", false, false), 1);
 }
 
 TEST_F(RTP, RECEIVER_SMALL_WINDOW)
@@ -273,11 +262,40 @@ TEST_F(RTP, RECEIVER_HUGE_WINDOW)
     ASSERT_EQ(run_tests("20000", "0", "0", false, false), 1);
 }
 
+TEST_F(RTP, RECEIVER_SINGLE_1_1)
+{
+    // lost or corrupted data
+    // ASSERT_EQ(run_tests("16", "1", "10", false, false), 1);
+    ASSERT_EQ(run_tests("16", "2", "10", false, false), 1);
+    ASSERT_EQ(run_tests("16", "0", "0", false, false), 1);
+}
+
+TEST_F(RTP, RECEIVER_SINGLE_1_2)
+{
+    // corrupted data
+    // ASSERT_EQ(run_tests("16", "1", "10", false, false), 1);
+    ASSERT_EQ(run_tests("16", "2", "10", false, false), 1);
+}
+
 TEST_F(RTP, RECEIVER_SINGLE_1)
 {
     // lost or corrupted data
     ASSERT_EQ(run_tests("16", "1", "10", false, false), 1);
     ASSERT_EQ(run_tests("16", "2", "10", false, false), 1);
+}
+
+TEST_F(RTP, RECEIVER_SINGLE_2_1)
+{
+    // duplicate data
+    ASSERT_EQ(run_tests("16", "4", "10", false, false), 1);
+    // ASSERT_EQ(run_tests("16", "8", "10", false, false), 1);
+}
+
+TEST_F(RTP, RECEIVER_SINGLE_2_2)
+{
+    // reorder data
+    // ASSERT_EQ(run_tests("16", "4", "10", false, false), 1);
+    ASSERT_EQ(run_tests("16", "8", "10", false, false), 1);
 }
 
 TEST_F(RTP, RECEIVER_SINGLE_2)

@@ -283,7 +283,7 @@ again:
                 // Check if the received packet->length is too large
                 if (len > PAYLOAD_MAX)
                 {
-                    LOG_MS("Received Incorrect Data Packet -- length too large\n");
+                    LOG_MSG("Received Incorrect Data Packet -- length too large\n");
                     continue;
                 }
 

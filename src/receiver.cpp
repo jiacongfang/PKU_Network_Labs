@@ -280,6 +280,13 @@ again:
                     continue;
                 }
 
+                // Check if the received packet->length is too large
+                if (len > PAYLOAD_MAX)
+                {
+                    LOG_MS("Received Incorrect Data Packet -- length too large\n");
+                    continue;
+                }
+
                 LOG_DEBUG("the header received_seq_num: %d, the expected seq_num: %d\n", received_seq_num % MAX_SEQ_NUM, exp_seq_num % MAX_SEQ_NUM);
 
                 // End the Connection

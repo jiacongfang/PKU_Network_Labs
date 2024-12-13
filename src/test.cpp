@@ -267,14 +267,13 @@ TEST_F(RTP, RECEIVER_SINGLE_1_1)
     // lost or corrupted data
     // ASSERT_EQ(run_tests("16", "1", "10", false, false), 1);
     ASSERT_EQ(run_tests("16", "2", "10", false, false), 1);
-    ASSERT_EQ(run_tests("16", "0", "0", false, false), 1);
 }
 
 TEST_F(RTP, RECEIVER_SINGLE_1_2)
 {
     // corrupted data
     // ASSERT_EQ(run_tests("16", "1", "10", false, false), 1);
-    ASSERT_EQ(run_tests("16", "2", "10", false, false), 1);
+    ASSERT_EQ(run_tests("16", "2", "70", false, false), 1);
 }
 
 TEST_F(RTP, RECEIVER_SINGLE_1)

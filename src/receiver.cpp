@@ -324,6 +324,11 @@ again:
                     if (end)
                         break;
                 }
+                else if (received_packet.rtp.flags == RTP_FIN && received_seq_num != exp_seq_num)
+                {
+                    LOG_MSG("Correct RTP_FIN received, but the seq_num is incorrect\n");
+                    continue;
+                }
 
                 // if (len == 0)
                 // {

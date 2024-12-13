@@ -318,11 +318,11 @@ again:
                         break;
                 }
 
-                if (len == 0)
-                {
-                    LOG_DEBUG("Received Incorrect Data Packet -- length = 0\n");
-                    continue;
-                }
+                // if (len == 0)
+                // {
+                //     LOG_DEBUG("Received Incorrect Data Packet -- length = 0\n");
+                //     continue;
+                // }
 
                 if (received_packet.rtp.flags != 0)
                 {

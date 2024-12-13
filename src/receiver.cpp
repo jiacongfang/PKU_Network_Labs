@@ -226,10 +226,10 @@ again:
         }
 
         // Print the window
-        for (auto it = window.begin(); it != window.end(); it++)
-        {
-            LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
-        }
+        // for (auto it = window.begin(); it != window.end(); it++)
+        // {
+        //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+        // }
 
         char buffer[BUFFER_SIZE];
         socklen_t addr_len = sizeof(listen_addr);
@@ -392,10 +392,10 @@ again:
                         LOG_DEBUG("Update the window, now base = %d, exp_seq_num = %d\n", base, exp_seq_num);
 
                         // Print the window
-                        for (auto it = window.begin(); it != window.end(); it++)
-                        {
-                            LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
-                        }
+                        // for (auto it = window.begin(); it != window.end(); it++)
+                        // {
+                        //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+                        // }
                     }
 
                     // Send ACK

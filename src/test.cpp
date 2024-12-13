@@ -408,3 +408,18 @@ TEST_F(RTP, OPT_SENDER_MIXED_2)
 {
     ASSERT_EQ(run_tests("16", "15", "30", true, true), 1);
 }
+
+TEST_F(RTP, OPT_SENDER_MIXED_3)
+{
+    ASSERT_EQ(run_tests("32", "15", "60", true, true), 1);
+}
+
+TEST_F(RTP, OPT_SENDER_MIXED_4)
+{
+    ASSERT_EQ(run_tests("32", "15", "50", true, true), 1);
+}
+
+TEST_F(RTP, OPT_SENDER_MIXED_5)
+{
+    ASSERT_EQ(run_tests("32", "11", "50", true, true), 1);
+}

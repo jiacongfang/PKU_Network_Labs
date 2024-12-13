@@ -142,6 +142,8 @@ int main(int argc, char **argv)
     // set a random `seq_num`
     uint32_t init_seq_num = rand() % MAX_SEQ_NUM;
 
+    LOG_MSG("init_seq_num: %d\n", init_seq_num);
+
     while (send_iter_count < RESEND_SYN_MAX)
     {
         // Step 1: Send RTP_SYN,
@@ -254,18 +256,33 @@ int main(int argc, char **argv)
     // Calculate the number of packets
     uint16_t num_packets = file_size / PAYLOAD_MAX + 1;
 
+    LOG_MSG("num_packets: %d\n", num_packets);
+
     if (mode == 0) // RBN
     {
         LOG_DEBUG("RBN mode\n");
         u_int32_t base = (init_seq_num + 1) % MAX_SEQ_NUM;
         u_int32_t next_seq_num = (init_seq_num + 1) % MAX_SEQ_NUM;
+        u_int32_t last_seq_num;
+
+        if (num_packets < window_size)
+        {
+            window_size = num_packets;
+        }
 
         // Init the window
         std::map<u_int32_t, bool> window;      // Check if the packet is sent before
         std::map<u_int32_t, std::string> data; // Include the header and payload
-        for (u_int32_t i = 0; i < window_size; i++)
+        for (u_int32_t i = 0; i <= window_size; i++)
         {
             window[(base + i) % MAX_SEQ_NUM] = false;
+        }
+
+        // Send the entire window
+        for (u_int32_t i = 0; i < window_size; i++)
+        {
+            send_packet_rbn(sockfd, base + i, receiver_addr, window, data, base, (base + i) % MAX_SEQ_NUM, file);
+            next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
         }
 
         // Loop until the file is sent
@@ -277,36 +294,13 @@ int main(int argc, char **argv)
                 break;
             }
 
-            // Send the entire window
             for (u_int32_t i = 0; i < window_size; i++)
             {
-                if (window.find((base + i) % MAX_SEQ_NUM) == window.end())
-                {
-                    LOG_FATAL("Failed to find the packet in the window\n");
-                }
-
-                if (window[(base + i) % MAX_SEQ_NUM] == false)
-                {
-                    send_packet_rbn(sockfd, base + i, receiver_addr, window, data, base, (base + i) % MAX_SEQ_NUM, file);
-                    next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
-
-                    // Expand the window
-                    window[(base + window_size + i) % MAX_SEQ_NUM] = false;
-                }
-
-                if (window[(base + i) % MAX_SEQ_NUM] == true)
+                if (window[(base + i) % MAX_SEQ_NUM] == true && data[(base + i) % MAX_SEQ_NUM].length() != 0)
                 {
                     send_stored_data(sockfd, receiver_addr, window, data, base, (base + i) % MAX_SEQ_NUM);
-
-                    window[(base + window_size + i) % MAX_SEQ_NUM] = false;
                 }
             }
-
-            // Print the window
-            // for (auto it = window.begin(); it != window.end(); it++)
-            // {
-            //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
-            // }
 
         wait_ack:
             // Wait for ACK, timeout is 100ms
@@ -355,38 +349,43 @@ int main(int argc, char **argv)
                 {
                     LOG_DEBUG("Received seq_sum: %d\n", received_ack_header->seq_num);
                     LOG_DEBUG("The ACK is out of the window\n");
+
+                    // print the window
+                    for (auto it = window.begin(); it != window.end(); it++)
+                    {
+                        LOG_MSG("window[%d]: %d\n", it->first, it->second);
+                    }
+
+                    LOG_FATAL("Failed to find the packet in the window\n");
                     goto wait_ack;
                 }
                 else
                 {
                     LOG_DEBUG("Received Correct ACK Packet\n");
-                    // update the window
-                    while (base <= received_ack_header->seq_num)
+                    LOG_DEBUG("received_ack_header->seq_num: %d\n", received_ack_header->seq_num);
+                    //  update the window
+                    while (base < received_ack_header->seq_num)
                     {
-                        LOG_DEBUG("received_ack_header->seq_num: %d\n", received_ack_header->seq_num);
                         window.erase(base);
                         base = (base + 1) % MAX_SEQ_NUM;
-                        window[(base + window_size - 1) % MAX_SEQ_NUM] = false;
+                        window[(base + window_size) % MAX_SEQ_NUM] = false;
                         num_packets--;
 
                         if (num_packets == 0)
                         {
+                            last_seq_num = received_ack_header->seq_num;
                             goto end;
                         }
 
-                        // send the next packet
-                        send_packet_rbn(sockfd, (base + window_size - 1) % MAX_SEQ_NUM, receiver_addr, window, data, base, (base + window_size - 1) % MAX_SEQ_NUM, file);
+                        // If there are still packets in the window, send them
+                        if (num_packets >= window_size)
+                        {
+                            send_packet_rbn(sockfd, (base + window_size - 1) % MAX_SEQ_NUM, receiver_addr, window, data, base, (base + window_size - 1) % MAX_SEQ_NUM, file);
 
-                        next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
-
-                        // Print the window
-                        // for (auto it = window.begin(); it != window.end(); it++)
-                        // {
-                        //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
-                        // }
-
-                        goto wait_ack;
+                            next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
+                        }
                     }
+                    goto wait_ack;
                 }
             }
         }
@@ -398,7 +397,7 @@ int main(int argc, char **argv)
         while (counter < RESEND_SYN_MAX)
         {
             // Send the FIN
-            send_fin(sockfd, next_seq_num, receiver_addr);
+            send_fin(sockfd, last_seq_num, receiver_addr);
 
             // Wait for the FIN_ACK
             struct timeval timer;
@@ -416,7 +415,7 @@ int main(int argc, char **argv)
             else if (ret == 0) // Timeout
             {
                 LOG_MSG("No FIN_ACK received, resending FIN...\n");
-                send_fin(sockfd, next_seq_num, receiver_addr);
+                send_fin(sockfd, last_seq_num, receiver_addr);
                 counter++;
                 continue;
             }
@@ -435,7 +434,16 @@ int main(int argc, char **argv)
                 if (received_checksum != compute_checksum(received_fin_ack_header, sizeof(rtp_header_t)))
                 {
                     LOG_DEBUG("Checksum is incorrect, resending FIN...\n");
-                    send_fin(sockfd, next_seq_num, receiver_addr);
+                    counter++;
+                    continue;
+                }
+
+                LOG_DEBUG("received_fin_ack_header->seq_sum: %d\n", received_fin_ack_header->seq_num);
+
+                if (received_fin_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
+                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
                     counter++;
                     continue;
                 }
@@ -443,14 +451,19 @@ int main(int argc, char **argv)
                 if (received_fin_ack_header->flags != (RTP_ACK | RTP_FIN))
                 {
                     LOG_DEBUG("Received Incorrect FIN_ACK Packet\n");
+                    LOG_DEBUG("received_fin_ack_header->flags: %d\n", received_fin_ack_header->flags);
+                    counter++;
                     continue;
                 }
 
-                if (received_fin_ack_header->seq_num == next_seq_num)
+                if (received_fin_ack_header->seq_num != last_seq_num)
                 {
-                    LOG_MSG("Received FIN_ACK, Ending connection\n");
-                    break;
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--seq_num\n");
+                    counter++;
+                    continue;
                 }
+
+                LOG_MSG("Received FIN_ACK, Ending connection\n");
 
                 // Wait for 2s to make sure the receiver has received the FIN_ACK
 
@@ -471,6 +484,7 @@ int main(int argc, char **argv)
                     char buffer[BUFFER_SIZE];
                     socklen_t addr_len = sizeof(receiver_addr);
                     recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&receiver_addr, &addr_len);
+                    counter++;
                     continue;
                 }
             }

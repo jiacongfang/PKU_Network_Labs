@@ -27,8 +27,8 @@ extern "C"
 #define LOG_DEBUG(...)                                                  \
     do                                                                  \
     {                                                                   \
-        fprintf(stderr, "\033[40;33m[ DEBUG    ] \033[0m" __VA_ARGS__); \
-        fflush(stderr);                                                 \
+        fprintf(stdout, "\033[40;33m[ DEBUG    ] \033[0m" __VA_ARGS__); \
+        fflush(stdout);                                                 \
     } while (0)
 #else
 #define LOG_DEBUG(...)

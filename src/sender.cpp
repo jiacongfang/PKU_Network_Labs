@@ -44,11 +44,11 @@ void send_ack(int sock, uint32_t seq_num, struct sockaddr_in listen_addr)
     LOG_DEBUG("Sent RTP_ACK with seq_num: %d\n", sent_ack_header.seq_num);
 }
 
-void send_packet_rbn(int sock, uint32_t seq_num, struct sockaddr_in listen_addr, std::map<uint32_t, bool> &window, std::map<uint32_t, std::string> &data, uint32_t base, uint32_t next_seq_num, FILE *file)
+void send_packet_rbn(int sock, uint32_t seq_num, struct sockaddr_in listen_addr, std::map<uint32_t, bool> &window, std::map<uint32_t, std::string> &data, FILE *file)
 {
     // Send the packet
     rtp_packet_t sent_packet;
-    sent_packet.rtp.seq_num = next_seq_num;
+    sent_packet.rtp.seq_num = seq_num;
     sent_packet.rtp.length = fread(sent_packet.payload, 1, PAYLOAD_MAX, file);
     sent_packet.rtp.checksum = 0;
     sent_packet.rtp.flags = 0;
@@ -65,17 +65,45 @@ void send_packet_rbn(int sock, uint32_t seq_num, struct sockaddr_in listen_addr,
     LOG_DEBUG("Payload: %s\n", sent_packet.payload);
 
     // Update the window
-    window[next_seq_num] = true;
-    data[next_seq_num] = std::string(sent_packet.payload, sent_packet.rtp.length);
+    window[seq_num] = true;
+    data[seq_num] = std::string(sent_packet.payload, sent_packet.rtp.length);
 }
 
-void send_stored_data(int sock, struct sockaddr_in listen_addr, std::map<uint32_t, bool> &window, std::map<uint32_t, std::string> &data, uint32_t base, uint32_t next_seq_num)
+void send_packet_sr(int sock, uint32_t seq_num, struct sockaddr_in listen_addr, std::map<uint32_t, bool> &window, std::map<uint32_t, std::string> &data, FILE *file)
+{
+    // Send the packet
+    rtp_packet_t sent_packet;
+    sent_packet.rtp.seq_num = seq_num;
+    sent_packet.rtp.length = fread(sent_packet.payload, 1, PAYLOAD_MAX, file);
+    sent_packet.rtp.checksum = 0;
+    sent_packet.rtp.flags = 0;
+
+    // Compute checksum
+    sent_packet.rtp.checksum = compute_checksum(&sent_packet, sent_packet.rtp.length + sizeof(rtp_header_t));
+
+    // Send the packet
+    sendto(sock, &sent_packet, sent_packet.rtp.length + sizeof(rtp_header_t), 0, (struct sockaddr *)&listen_addr, sizeof(listen_addr));
+    LOG_DEBUG("Sent RTP_PACKET with seq_num: %d\n", sent_packet.rtp.seq_num);
+
+    LOG_DEBUG("length of the payload = %d\n", sent_packet.rtp.length);
+
+    LOG_DEBUG("Payload: %s\n", sent_packet.payload);
+
+    // Update the window
+    data[seq_num] = std::string(sent_packet.payload, sent_packet.rtp.length);
+
+    // Check the file pointer position
+    long pos = ftell(file);
+    LOG_DEBUG("File pointer position after fread: %ld\n", pos);
+}
+
+void send_stored_data(int sock, struct sockaddr_in listen_addr, std::map<uint32_t, bool> &window, std::map<uint32_t, std::string> &data, uint32_t seq_num)
 {
     // Send the stored data
     rtp_packet_t sent_packet;
-    sent_packet.rtp.seq_num = next_seq_num;
-    sent_packet.rtp.length = data[next_seq_num].length();
-    memcpy(sent_packet.payload, data[next_seq_num].c_str(), data[next_seq_num].length());
+    sent_packet.rtp.seq_num = seq_num;
+    sent_packet.rtp.length = data[seq_num].length();
+    memcpy(sent_packet.payload, data[seq_num].c_str(), data[seq_num].length());
     sent_packet.rtp.checksum = 0;
     sent_packet.rtp.flags = 0;
 
@@ -262,7 +290,6 @@ int main(int argc, char **argv)
     {
         LOG_DEBUG("RBN mode\n");
         u_int32_t base = (init_seq_num + 1) % MAX_SEQ_NUM;
-        u_int32_t next_seq_num = (init_seq_num + 1) % MAX_SEQ_NUM;
         u_int32_t last_seq_num;
 
         if (num_packets < window_size)
@@ -281,8 +308,7 @@ int main(int argc, char **argv)
         // Send the entire window
         for (u_int32_t i = 0; i < window_size; i++)
         {
-            send_packet_rbn(sockfd, base + i, receiver_addr, window, data, base, (base + i) % MAX_SEQ_NUM, file);
-            next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
+            send_packet_rbn(sockfd, (base + i) % MAX_SEQ_NUM, receiver_addr, window, data, file);
         }
 
         // Loop until the file is sent
@@ -298,7 +324,7 @@ int main(int argc, char **argv)
             {
                 if (window[(base + i) % MAX_SEQ_NUM] == true && data[(base + i) % MAX_SEQ_NUM].length() != 0)
                 {
-                    send_stored_data(sockfd, receiver_addr, window, data, base, (base + i) % MAX_SEQ_NUM);
+                    send_stored_data(sockfd, receiver_addr, window, data, (base + i) % MAX_SEQ_NUM);
                 }
             }
 
@@ -351,10 +377,10 @@ int main(int argc, char **argv)
                     LOG_DEBUG("The ACK is out of the window\n");
 
                     // print the window
-                    for (auto it = window.begin(); it != window.end(); it++)
-                    {
-                        LOG_MSG("window[%d]: %d\n", it->first, it->second);
-                    }
+                    // for (auto it = window.begin(); it != window.end(); it++)
+                    // {
+                    //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+                    // }
 
                     LOG_FATAL("Failed to find the packet in the window\n");
                     goto wait_ack;
@@ -380,9 +406,7 @@ int main(int argc, char **argv)
                         // If there are still packets in the window, send them
                         if (num_packets >= window_size)
                         {
-                            send_packet_rbn(sockfd, (base + window_size - 1) % MAX_SEQ_NUM, receiver_addr, window, data, base, (base + window_size - 1) % MAX_SEQ_NUM, file);
-
-                            next_seq_num = (next_seq_num + 1) % MAX_SEQ_NUM;
+                            send_packet_rbn(sockfd, (base + window_size - 1) % MAX_SEQ_NUM, receiver_addr, window, data, file);
                         }
                     }
                     goto wait_ack;
@@ -489,6 +513,284 @@ int main(int argc, char **argv)
                 }
             }
         }
+    }
+    else if (mode == 1) // SR
+    {
+        LOG_DEBUG("SR mode\n");
+        u_int32_t base = (init_seq_num + 1) % MAX_SEQ_NUM;
+        u_int32_t last_seq_num;
+
+        // Init the window
+        std::map<u_int32_t, bool> window;      // Check if the packet is acked before
+        std::map<u_int32_t, std::string> data; // Include the header and payload
+        for (u_int32_t i = 0; i < window_size; i++)
+        {
+            window[(base + i) % MAX_SEQ_NUM] = false;
+        }
+
+        // print the window
+        // for (auto it = window.begin(); it != window.end(); it++)
+        // {
+        //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+        // }
+
+        // Send the entire window
+        for (u_int32_t i = 0; i < window_size; i++)
+        {
+            if (num_packets > i)
+                send_packet_sr(sockfd, (base + i) % MAX_SEQ_NUM, receiver_addr, window, data, file);
+        }
+
+        // print the payload
+        // for (auto it = data.begin(); it != data.end(); it++)
+        // {
+        //     LOG_MSG("data[%d]: %s\n", it->first, it->second.c_str());
+        // }
+
+        // Loop until the file is sent
+        while (true)
+        {
+            // if file is sent, break
+            if (num_packets == 0)
+            {
+                break;
+            }
+
+            for (u_int32_t i = 0; i < window_size; i++)
+            {
+                if (window[(base + i) % MAX_SEQ_NUM] == false && data[(base + i) % MAX_SEQ_NUM].length() != 0)
+                {
+                    send_stored_data(sockfd, receiver_addr, window, data, (base + i) % MAX_SEQ_NUM);
+                }
+            }
+
+            struct timeval timer;
+
+        wait_ack_sr:
+            timer.tv_sec = 0;
+            timer.tv_usec = 100000;
+
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sockfd, &readfds);
+
+            int ret = select(sockfd + 1, &readfds, NULL, NULL, &timer);
+            if (ret == -1) // Select error
+                LOG_FATAL("Failed to select\n");
+            else if (ret == 0) // Timeout
+            {
+                LOG_DEBUG("Timeout, resending the window...\n");
+                continue;
+            }
+            else // Receive the packet successfully
+            {
+                LOG_DEBUG("Receive a 'seem' ACK\n");
+                char buffer[BUFFER_SIZE];
+                socklen_t addr_len = sizeof(receiver_addr);
+                recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&receiver_addr, &addr_len);
+
+                // Convert the buffer to rtp_header_t
+                rtp_header_t *received_ack_header = (rtp_header_t *)buffer;
+                uint32_t received_checksum = received_ack_header->checksum;
+                received_ack_header->checksum = 0;
+
+                // Check if the checksum is correct
+                if (received_checksum != compute_checksum(received_ack_header, sizeof(rtp_header_t)))
+                {
+                    LOG_DEBUG("Checksum is incorrect, resending the window...\n");
+                    goto wait_ack_sr;
+                }
+
+                if (received_ack_header->flags != RTP_ACK)
+                {
+                    LOG_DEBUG("Received Incorrect ACK Packet\n");
+                    goto wait_ack_sr;
+                }
+
+                if (window.find(received_ack_header->seq_num) == window.end())
+                {
+                    LOG_DEBUG("Received seq_sum: %d\n", received_ack_header->seq_num);
+                    LOG_DEBUG("The ACK is out of the window\n");
+
+                    // print the window
+                    // for (auto it = window.begin(); it != window.end(); it++)
+                    // {
+                    //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+                    // }
+
+                    goto wait_ack_sr;
+                }
+
+                if (window[received_ack_header->seq_num] == true) // has acked before
+                {
+                    LOG_DEBUG("it has acked before\n");
+                    LOG_DEBUG("Received seq_sum: %d\n", received_ack_header->seq_num);
+
+                    // print the window
+                    // for (auto it = window.begin(); it != window.end(); it++)
+                    // {
+                    //     LOG_MSG("window[%d]: %d\n", it->first, it->second);
+                    // }
+                    goto wait_ack_sr;
+                }
+                else
+                {
+                    LOG_DEBUG("Received Correct ACK Packet\n");
+                    LOG_DEBUG("received_ack_header->seq_num: %d\n", received_ack_header->seq_num);
+                    //  update the window
+
+                    LOG_DEBUG("base: %d\n", base);
+                    if (received_ack_header->seq_num == base)
+                    {
+                        window[base] = true;
+                        u_int32_t counter = -1;
+                        while (window[base] == true)
+                        {
+                            counter++;
+                            window.erase(base);
+                            base = (base + 1) % MAX_SEQ_NUM;
+                            window[(base + window_size - 1) % MAX_SEQ_NUM] = false;
+                            num_packets--;
+
+                            // for (auto it = window.begin(); it != window.end(); it++)
+                            // {
+                            //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+                            // }
+
+                            LOG_DEBUG("num_packets: %d\n", num_packets);
+
+                            if (num_packets == 0)
+                            {
+                                last_seq_num = received_ack_header->seq_num + 1 + counter;
+                                goto end_sr;
+                            }
+
+                            // If there are still packets in the window, send them
+                            if (num_packets >= window_size)
+                            {
+                                send_packet_sr(sockfd, (base + window_size - 1) % MAX_SEQ_NUM, receiver_addr, window, data, file);
+                            }
+                        }
+                        // print the window
+                        // for (auto it = window.begin(); it != window.end(); it++)
+                        // {
+                        //     LOG_DEBUG("window[%d]: %d\n", it->first, it->second);
+                        // }
+
+                        goto wait_ack_sr;
+                    }
+                    else
+                    {
+                        window[received_ack_header->seq_num] = true;
+                        goto wait_ack_sr;
+                    }
+                }
+            }
+        }
+    end_sr:
+        fclose(file);
+
+        uint32_t counter = 0;
+        while (counter < RESEND_SYN_MAX)
+        {
+            // Send the FIN
+            send_fin(sockfd, last_seq_num, receiver_addr);
+
+            // Wait for the FIN_ACK
+            struct timeval timer;
+            timer.tv_sec = 0;
+            timer.tv_usec = 100000;
+
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sockfd, &readfds);
+
+            int ret = select(sockfd + 1, &readfds, NULL, NULL, &timer);
+
+            if (ret == -1) // Select error
+                LOG_FATAL("Failed to select\n");
+            else if (ret == 0) // Timeout
+            {
+                LOG_DEBUG("No FIN_ACK received, resending FIN...\n");
+                send_fin(sockfd, last_seq_num, receiver_addr);
+                counter++;
+                continue;
+            }
+            else
+            {
+                char buffer[BUFFER_SIZE];
+                socklen_t addr_len = sizeof(receiver_addr);
+                recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&receiver_addr, &addr_len);
+
+                // Convert the buffer to rtp_header_t
+                rtp_header_t *received_fin_ack_header = (rtp_header_t *)buffer;
+                uint32_t received_checksum = received_fin_ack_header->checksum;
+                received_fin_ack_header->checksum = 0;
+
+                // Check if the checksum is correct
+                if (received_checksum != compute_checksum(received_fin_ack_header, sizeof(rtp_header_t)))
+                {
+                    LOG_DEBUG("Checksum is incorrect, resending FIN...\n");
+                    counter++;
+                    continue;
+                }
+
+                LOG_DEBUG("received_fin_ack_header->seq_sum: %d\n", received_fin_ack_header->seq_num);
+
+                if (received_fin_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
+                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
+                    counter++;
+                    continue;
+                }
+
+                if (received_fin_ack_header->flags != (RTP_ACK | RTP_FIN))
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet\n");
+                    LOG_DEBUG("received_fin_ack_header->flags: %d\n", received_fin_ack_header->flags);
+                    counter++;
+                    continue;
+                }
+
+                if (received_fin_ack_header->seq_num != last_seq_num)
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--seq_num\n");
+                    counter++;
+                    continue;
+                }
+
+                LOG_MSG("Received FIN_ACK, Ending connection\n");
+
+                // Wait for 2s to make sure the receiver has received the FIN_ACK
+
+                struct timeval timer;
+                timer.tv_sec = 2;
+                timer.tv_usec = 0;
+
+                int ret_wait = select(sockfd + 1, &readfds, NULL, NULL, &timer);
+
+                if (ret_wait == -1) // Select error
+                    LOG_FATAL("Failed to select\n");
+                else if (ret_wait == 0) // No FIN_ACK again
+                {
+                    LOG_MSG("The sender received FIN_ACK, Ending connection\n");
+                    break;
+                }
+                else // Receive FIN_ACK again
+                {
+                    char buffer[BUFFER_SIZE];
+                    socklen_t addr_len = sizeof(receiver_addr);
+                    recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&receiver_addr, &addr_len);
+                    counter++;
+                    continue;
+                }
+            }
+        }
+    }
+    else
+    {
+        LOG_FATAL("Invalid mode\n");
     }
 
     LOG_MSG("File sent successfully\n");

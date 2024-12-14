@@ -273,17 +273,17 @@ again:
                 LOG_DEBUG("received_checksum: %d\n", received_checksum);
                 LOG_DEBUG("compute_checksum: %d\n", compute_checksum(&received_packet, len + sizeof(rtp_header_t)));
 
-                // Check if the checksum is correct
-                if (received_checksum != compute_checksum(&received_packet, len + sizeof(rtp_header_t)))
-                {
-                    LOG_DEBUG("Checksum is incorrect, wait for the packet again\n");
-                    continue;
-                }
-
                 // Check if the received packet->length is too large
                 if (len > PAYLOAD_MAX)
                 {
                     LOG_MSG("Received Incorrect Data Packet -- length too large\n");
+                    continue;
+                }
+
+                // Check if the checksum is correct
+                if (received_checksum != compute_checksum(&received_packet, len + sizeof(rtp_header_t)))
+                {
+                    LOG_DEBUG("Checksum is incorrect, wait for the packet again\n");
                     continue;
                 }
 

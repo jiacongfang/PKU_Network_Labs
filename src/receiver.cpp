@@ -125,6 +125,13 @@ again:
         uint32_t received_checksum = received_syn_header->checksum;
         received_syn_header->checksum = 0;
 
+        // Check length first
+        if (received_syn_header->length != 0)
+        {
+            LOG_DEBUG("Received Incorrect SYN Packet -- length\n");
+            goto again;
+        }
+
         // Check if the checksum is correct
         if (received_checksum != compute_checksum(received_syn_header, sizeof(rtp_header_t)))
         {
@@ -175,6 +182,14 @@ again:
 
                     uint32_t received_ack_checksum = received_ack_header->checksum;
                     received_ack_header->checksum = 0;
+
+                    // Check length first
+                    if (received_ack_header->length != 0)
+                    {
+                        LOG_DEBUG("Received Incorrect ACK Packet--length\n");
+                        LOG_DEBUG("received_ack_header->length: %d\n", received_ack_header->length);
+                        continue;
+                    }
 
                     LOG_DEBUG("received_ack_checksum: %d\n", received_ack_checksum);
                     LOG_DEBUG("compute_checksum: %d\n", compute_checksum(received_ack_header, sizeof(rtp_header_t)));
@@ -290,7 +305,7 @@ again:
                 LOG_DEBUG("the header received_seq_num: %d, the expected seq_num: %d\n", received_seq_num % MAX_SEQ_NUM, exp_seq_num % MAX_SEQ_NUM);
 
                 // End the Connection
-                if (received_seq_num == exp_seq_num && received_packet.rtp.flags == RTP_FIN)
+                if (received_seq_num == exp_seq_num && received_packet.rtp.flags == RTP_FIN && len == 0)
                 {
                     int counter = 0;
                     bool end = false;
@@ -329,12 +344,6 @@ again:
                     LOG_MSG("Correct RTP_FIN received, but the seq_num is incorrect\n");
                     continue;
                 }
-
-                // if (len == 0)
-                // {
-                //     LOG_DEBUG("Received Incorrect Data Packet -- length = 0\n");
-                //     continue;
-                // }
 
                 if (received_packet.rtp.flags != 0)
                 {

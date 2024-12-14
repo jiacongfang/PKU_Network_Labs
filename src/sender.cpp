@@ -209,6 +209,15 @@ int main(int argc, char **argv)
             uint32_t received_checksum = recievied_ack_header->checksum;
             recievied_ack_header->checksum = 0;
 
+            // check length first
+            if (recievied_ack_header->length != 0)
+            {
+                LOG_DEBUG("Received Incorrect ACK Packet--length\n");
+                LOG_DEBUG("recievied_ack_header->length: %d\n", recievied_ack_header->length);
+                send_iter_count++;
+                continue;
+            }
+
             // Check if the checksum is correct
             if (received_checksum != compute_checksum(recievied_ack_header, sizeof(rtp_header_t)))
             {
@@ -358,6 +367,14 @@ int main(int argc, char **argv)
                 uint32_t received_checksum = received_ack_header->checksum;
                 received_ack_header->checksum = 0;
 
+                // Check length first
+                if (received_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect ACK Packet--length\n");
+                    LOG_DEBUG("received_ack_header->length: %d\n", received_ack_header->length);
+                    goto wait_ack;
+                }
+
                 // Check if the checksum is correct
                 if (received_checksum != compute_checksum(received_ack_header, sizeof(rtp_header_t)))
                 {
@@ -454,6 +471,14 @@ int main(int argc, char **argv)
                 uint32_t received_checksum = received_fin_ack_header->checksum;
                 received_fin_ack_header->checksum = 0;
 
+                if (received_fin_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
+                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
+                    counter++;
+                    continue;
+                }
+
                 // Check if the checksum is correct
                 if (received_checksum != compute_checksum(received_fin_ack_header, sizeof(rtp_header_t)))
                 {
@@ -463,14 +488,6 @@ int main(int argc, char **argv)
                 }
 
                 LOG_DEBUG("received_fin_ack_header->seq_sum: %d\n", received_fin_ack_header->seq_num);
-
-                if (received_fin_ack_header->length != 0)
-                {
-                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
-                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
-                    counter++;
-                    continue;
-                }
 
                 if (received_fin_ack_header->flags != (RTP_ACK | RTP_FIN))
                 {
@@ -593,6 +610,14 @@ int main(int argc, char **argv)
                 rtp_header_t *received_ack_header = (rtp_header_t *)buffer;
                 uint32_t received_checksum = received_ack_header->checksum;
                 received_ack_header->checksum = 0;
+
+                // Check length first
+                if (received_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect ACK Packet--length\n");
+                    LOG_DEBUG("received_ack_header->length: %d\n", received_ack_header->length);
+                    goto wait_ack_sr;
+                }
 
                 // Check if the checksum is correct
                 if (received_checksum != compute_checksum(received_ack_header, sizeof(rtp_header_t)))
@@ -727,6 +752,14 @@ int main(int argc, char **argv)
                 uint32_t received_checksum = received_fin_ack_header->checksum;
                 received_fin_ack_header->checksum = 0;
 
+                if (received_fin_ack_header->length != 0)
+                {
+                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
+                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
+                    counter++;
+                    continue;
+                }
+
                 // Check if the checksum is correct
                 if (received_checksum != compute_checksum(received_fin_ack_header, sizeof(rtp_header_t)))
                 {
@@ -736,14 +769,6 @@ int main(int argc, char **argv)
                 }
 
                 LOG_DEBUG("received_fin_ack_header->seq_sum: %d\n", received_fin_ack_header->seq_num);
-
-                if (received_fin_ack_header->length != 0)
-                {
-                    LOG_DEBUG("Received Incorrect FIN_ACK Packet--length\n");
-                    LOG_DEBUG("received_fin_ack_header->length: %d\n", received_fin_ack_header->length);
-                    counter++;
-                    continue;
-                }
 
                 if (received_fin_ack_header->flags != (RTP_ACK | RTP_FIN))
                 {

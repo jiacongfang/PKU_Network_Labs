@@ -16,7 +16,7 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
-option(DL "debug logging" ON)
+option(DL "debug logging" OFF)
 
 if(DL)
     message("Debug logging is on")

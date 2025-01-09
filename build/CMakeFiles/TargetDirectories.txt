@@ -1,0 +1,4 @@
+/home/student/workspace/code/2024-lab1-myftp-jiacongfang/build/CMakeFiles/ftp_server.dir
+/home/student/workspace/code/2024-lab1-myftp-jiacongfang/build/CMakeFiles/ftp_client.dir
+/home/student/workspace/code/2024-lab1-myftp-jiacongfang/build/CMakeFiles/edit_cache.dir
+/home/student/workspace/code/2024-lab1-myftp-jiacongfang/build/CMakeFiles/rebuild_cache.dir

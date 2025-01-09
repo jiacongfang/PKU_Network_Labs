@@ -1,0 +1,15 @@
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+ftp_client
+ftp_server
+ftp_server_std
+ftp_test
+ftp_test_complex
+ftp_test_simple
+last_port
+test
+tmp.out
+tmp_dir_client
+tmp_dir_server

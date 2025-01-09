@@ -1,0 +1,221 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: NORMAL
+      id: normal
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: NORMAL
+        setup-command: rm -rf test && git clone https://github.com/N2Sys-EDU/Lab2-RTP-Test.git
+          test
+        command: "./test/runtest.sh NORMAL"
+        timeout: 1
+        max-score: 10
+    - name: NORMAL_SMALL_WINDOW
+      id: normal_small_window
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: NORMAL_SMALL_WINDOW
+        setup-command: ''
+        command: "./test/runtest.sh NORMAL_SMALL_WINDOW"
+        timeout: 1
+        max-score: 10
+    - name: NORMAL_OPT
+      id: normal_opt
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: NORMAL_OPT
+        setup-command: ''
+        command: "./test/runtest.sh NORMAL_OPT"
+        timeout: 1
+        max-score: 10
+    - name: NORMAL_OPT_SMALL_WINDOW
+      id: normal_opt_small_window
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: NORMAL_OPT_SMALL_WINDOW
+        setup-command: ''
+        command: "./test/runtest.sh NORMAL_OPT_SMALL_WINDOW"
+        timeout: 1
+        max-score: 10
+    - name: RECEIVER_SINGLE_1
+      id: receiver_single_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: RECEIVER_SINGLE_1
+        setup-command: ''
+        command: "./test/runtest.sh RECEIVER_SINGLE_1"
+        timeout: 1
+        max-score: 10
+    - name: RECEIVER_SINGLE_2
+      id: receiver_single_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: RECEIVER_SINGLE_2
+        setup-command: ''
+        command: "./test/runtest.sh RECEIVER_SINGLE_2"
+        timeout: 1
+        max-score: 10
+    - name: RECEIVER_MIXED_1
+      id: receiver_mixed_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: RECEIVER_MIXED_1
+        setup-command: ''
+        command: "./test/runtest.sh RECEIVER_MIXED_1"
+        timeout: 1
+        max-score: 10
+    - name: RECEIVER_MIXED_2
+      id: receiver_mixed_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: RECEIVER_MIXED_2
+        setup-command: ''
+        command: "./test/runtest.sh RECEIVER_MIXED_2"
+        timeout: 1
+        max-score: 10
+    - name: SENDER_SINGLE_1
+      id: sender_single_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: SENDER_SINGLE_1
+        setup-command: ''
+        command: "./test/runtest.sh SENDER_SINGLE_1"
+        timeout: 1
+        max-score: 10
+    - name: SENDER_SINGLE_2
+      id: sender_single_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: SENDER_SINGLE_2
+        setup-command: ''
+        command: "./test/runtest.sh SENDER_SINGLE_2"
+        timeout: 1
+        max-score: 10
+    - name: SENDER_MIXED_1
+      id: sender_mixed_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: SENDER_MIXED_1
+        setup-command: ''
+        command: "./test/runtest.sh SENDER_MIXED_1"
+        timeout: 1
+        max-score: 10
+    - name: SENDER_MIXED_2
+      id: sender_mixed_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: SENDER_MIXED_2
+        setup-command: ''
+        command: "./test/runtest.sh SENDER_MIXED_2"
+        timeout: 1
+        max-score: 10
+    - name: OPT_RECEIVER_SINGLE_1
+      id: opt_receiver_single_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_RECEIVER_SINGLE_1
+        setup-command: ''
+        command: "./test/runtest.sh OPT_RECEIVER_SINGLE_1"
+        timeout: 1
+        max-score: 10
+    - name: OPT_RECEIVER_SINGLE_2
+      id: opt_receiver_single_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_RECEIVER_SINGLE_2
+        setup-command: ''
+        command: "./test/runtest.sh OPT_RECEIVER_SINGLE_2"
+        timeout: 1
+        max-score: 10
+    - name: OPT_RECEIVER_MIXED_1
+      id: opt_receiver_mixed_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_RECEIVER_MIXED_1
+        setup-command: ''
+        command: "./test/runtest.sh OPT_RECEIVER_MIXED_1"
+        timeout: 1
+        max-score: 10
+    - name: OPT_RECEIVER_MIXED_2
+      id: opt_receiver_mixed_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_RECEIVER_MIXED_2
+        setup-command: ''
+        command: "./test/runtest.sh OPT_RECEIVER_MIXED_2"
+        timeout: 1
+        max-score: 10
+    - name: OPT_SENDER_SINGLE_1
+      id: opt_sender_single_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_SENDER_SINGLE_1
+        setup-command: ''
+        command: "./test/runtest.sh OPT_SENDER_SINGLE_1"
+        timeout: 1
+        max-score: 10
+    - name: OPT_SENDER_SINGLE_2
+      id: opt_sender_single_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_SENDER_SINGLE_2
+        setup-command: ''
+        command: "./test/runtest.sh OPT_SENDER_SINGLE_2"
+        timeout: 1
+        max-score: 10
+    - name: OPT_SENDER_MIXED_1
+      id: opt_sender_mixed_1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_SENDER_MIXED_1
+        setup-command: ''
+        command: "./test/runtest.sh OPT_SENDER_MIXED_1"
+        timeout: 1
+        max-score: 10
+    - name: OPT_SENDER_MIXED_2
+      id: opt_sender_mixed_2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: OPT_SENDER_MIXED_2
+        setup-command: ''
+        command: "./test/runtest.sh OPT_SENDER_MIXED_2"
+        timeout: 1
+        max-score: 10
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        NORMAL_RESULTS: "${{steps.normal.outputs.result}}"
+        NORMAL_SMALL_WINDOW_RESULTS: "${{steps.normal_small_window.outputs.result}}"
+        NORMAL_OPT_RESULTS: "${{steps.normal_opt.outputs.result}}"
+        NORMAL_OPT_SMALL_WINDOW_RESULTS: "${{steps.normal_opt_small_window.outputs.result}}"
+        RECEIVER_SINGLE_1_RESULTS: "${{steps.receiver_single_1.outputs.result}}"
+        RECEIVER_SINGLE_2_RESULTS: "${{steps.receiver_single_2.outputs.result}}"
+        RECEIVER_MIXED_1_RESULTS: "${{steps.receiver_mixed_1.outputs.result}}"
+        RECEIVER_MIXED_2_RESULTS: "${{steps.receiver_mixed_2.outputs.result}}"
+        SENDER_SINGLE_1_RESULTS: "${{steps.sender_single_1.outputs.result}}"
+        SENDER_SINGLE_2_RESULTS: "${{steps.sender_single_2.outputs.result}}"
+        SENDER_MIXED_1_RESULTS: "${{steps.sender_mixed_1.outputs.result}}"
+        SENDER_MIXED_2_RESULTS: "${{steps.sender_mixed_2.outputs.result}}"
+        OPT_RECEIVER_SINGLE_1_RESULTS: "${{steps.opt_receiver_single_1.outputs.result}}"
+        OPT_RECEIVER_SINGLE_2_RESULTS: "${{steps.opt_receiver_single_2.outputs.result}}"
+        OPT_RECEIVER_MIXED_1_RESULTS: "${{steps.opt_receiver_mixed_1.outputs.result}}"
+        OPT_RECEIVER_MIXED_2_RESULTS: "${{steps.opt_receiver_mixed_2.outputs.result}}"
+        OPT_SENDER_SINGLE_1_RESULTS: "${{steps.opt_sender_single_1.outputs.result}}"
+        OPT_SENDER_SINGLE_2_RESULTS: "${{steps.opt_sender_single_2.outputs.result}}"
+        OPT_SENDER_MIXED_1_RESULTS: "${{steps.opt_sender_mixed_1.outputs.result}}"
+        OPT_SENDER_MIXED_2_RESULTS: "${{steps.opt_sender_mixed_2.outputs.result}}"
+      with:
+        runners: normal,normal_small_window,normal_opt,normal_opt_small_window,receiver_single_1,receiver_single_2,receiver_mixed_1,receiver_mixed_2,sender_single_1,sender_single_2,sender_mixed_1,sender_mixed_2,opt_receiver_single_1,opt_receiver_single_2,opt_receiver_mixed_1,opt_receiver_mixed_2,opt_sender_single_1,opt_sender_single_2,opt_sender_mixed_1,opt_sender_mixed_2

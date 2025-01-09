@@ -1,0 +1,4 @@
+[submodule "test"]
+	path = test
+	url = https://github.com/N2Sys-EDU/Lab2-RTP-Test.git
+	branch = master

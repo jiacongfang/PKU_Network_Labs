@@ -1,2 +1,0 @@
-/usr/bin/ar qc librtp_all.a CMakeFiles/rtp_all.dir/src/util.cpp.o
-/usr/bin/ranlib librtp_all.a

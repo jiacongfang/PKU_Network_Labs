@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/receiver.dir/src/receiver.cpp.o -o receiver   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib librtp_all.a 

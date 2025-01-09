@@ -1,5 +1,0 @@
-if(EXISTS "/home/student/workspace/code/2024-lab2-rtp-jiacongfang/build/rtp_test_all[1]_tests.cmake")
-  include("/home/student/workspace/code/2024-lab2-rtp-jiacongfang/build/rtp_test_all[1]_tests.cmake")
-else()
-  add_test(rtp_test_all_NOT_BUILT rtp_test_all_NOT_BUILT)
-endif()

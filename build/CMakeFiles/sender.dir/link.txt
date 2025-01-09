@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/sender.dir/src/sender.cpp.o -o sender   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib librtp_all.a 
